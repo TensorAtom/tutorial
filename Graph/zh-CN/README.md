@@ -17,11 +17,15 @@
 可以运行如下代码看几个常见的图形元素：
 
 ```python
-def test_meta():
+import sys
+sys.path.append('../app') # Graph 项目所在路径
+
+from graph import Meta
+
+def test_meta(direction = (20, 20, 220, 300)):
     from tkinter import Tk
     root = Tk()
     self = Meta(root, line_width=10, width=250, height=400, background='white')
-    direction = 20, 20, 220, 300
     self.draw_graph(direction, 'Rectangle', 'blue')
     self.draw_graph(direction, 'Oval', 'red')
     self.draw_graph(direction, 'Arc', 'green', 'pieslice')
@@ -36,4 +40,61 @@ test_meta()
 
 ![图1 常见的图形元素](../images/test_meta.png)
 
-图1 显示了红色的椭圆、绿色的扇形、蓝色的矩形、黑色的线段。
+图1 显示了红色的椭圆、绿色的扇形、蓝色的矩形、黑色的线段。从图中可以观察到给定相同的 `direction`，画出的图形元素有着相同的中心。从本质上讲，`direction` 可以看作是椭圆、扇形、矩形以及线段的方向向量。只要给定 `direction`，那么它们之间的关系就被牢牢的锁定了。
+
+这里的 `Meta` 没有直接提供画“多边形”的方法，其实画“多边形”可以由画“线段”组合得到。下面给出代码实现：
+
+```python
+from tkinter import Tk
+
+def point2polygon(points):
+    '''将点列转换为首尾相接的线段'''
+    directions = []
+    for start, end in zip(points, points[1:]):
+        directions.append((*start, *end))
+    directions.append((*points[-1], *points[0]))
+    return directions
+
+def draw_polygon(meta, *directions):
+    '''画出多边形'''
+    for direct in directions:
+        meta.draw_graph(direct, 'Line', 'black', fill='red')
+
+root = Tk()
+self = Meta(root, line_width=5, width=250, height=400, background='white')
+
+points = [
+    (20, 20), (30, 50), (100, 250),
+    (250, 340), (220, 230)
+]
+directions = point2polygon(points)
+draw_polygon(self, *directions)
+self.layout()
+root.mainloop()
+```
+
+效果图见图2：
+
+![图2 画出多边形](../images/meta_polygon.png)
+
+您也可以使用 `self.create_polygon(points, fill='red')` 画出有内部填充的多边形。下面以“矩形”为例来说明这些图形元素的更多方法。
+
+### 2.1 画虚线
+
+可以使用如下代码画出虚线图形：
+
+```python
+def test_meta_dash(direction = (20, 20, 220, 300)):
+    from tkinter import Tk
+    root = Tk()
+    self = Meta(root, line_width=10, width=250, height=400, background='white')
+    self.draw_graph(direction, 'Rectangle', 'blue', dash=5)
+    self.layout()
+    root.mainloop()
+
+test_meta_dash()
+```
+
+效果见图3：
+
+![图3 Meta 画虚线的示例](../images/meta_dash.png)
