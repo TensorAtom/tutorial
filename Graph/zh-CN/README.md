@@ -1,6 +1,18 @@
 # 项目手册
 
-本手册主要介绍本项目的创建的基础以及如何使用本项目完成计算机图形的操作。
+本手册主要介绍 [TensorAtom](https://github.com/TensorAtom)/[Graph](https://github.com/TensorAtom/Graph) 项目的创建的基础以及如何使用该项目完成计算机图形的相关操作。
+
+可以直接使用 PyPI 的安装方式进行安装：
+
+```sh
+$ pip install graph-tensor
+```
+
+之后的使用需要载入：
+
+```python
+import graph_tensor
+```
 
 ## 1. 设计的基础
 
@@ -17,10 +29,8 @@
 可以运行如下代码看几个常见的图形元素：
 
 ```python
-import sys
-sys.path.append('../app') # Graph 项目所在路径
+from graph_tensor.graph.atom import Meta
 
-from graph import Meta
 
 def test_meta(direction = (20, 20, 220, 300)):
     from tkinter import Tk
@@ -81,7 +91,7 @@ root.mainloop()
 
 ### 2.1 画虚线
 
-可以使用如下代码画出虚线图形：
+可以使用如下代码画出虚线图形（需要指定参数 `dash`）：
 
 ```python
 def test_meta_dash(direction = (20, 20, 220, 300)):
