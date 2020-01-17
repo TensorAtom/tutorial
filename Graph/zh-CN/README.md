@@ -35,11 +35,11 @@ from graph_tensor.graph.atom import Meta
 def test_meta(direction = (20, 20, 220, 300)):
     from tkinter import Tk
     root = Tk()
-    self = Meta(root, line_width=10, width=250, height=400, background='white')
-    self.draw_graph(direction, 'Rectangle', 'blue')
-    self.draw_graph(direction, 'Oval', 'red')
-    self.draw_graph(direction, 'Arc', 'green', 'pieslice')
-    self.draw_graph(direction, 'Line', 'black')
+    self = Meta(root, width=250, height=400, background='white')
+    self.draw_graph(direction, 'Rectangle', 'blue', line_width=10)
+    self.draw_graph(direction, 'Oval', 'red', line_width=10)
+    self.draw_graph(direction, 'Arc', 'green', line_width=10, arc_style='pieslice')
+    self.draw_graph(direction, 'Line', 'black',line_width=10)
     self.layout()
     root.mainloop()
 
@@ -68,10 +68,10 @@ def point2polygon(points):
 def draw_polygon(meta, *directions):
     '''画出多边形'''
     for direct in directions:
-        meta.draw_graph(direct, 'Line', 'black', fill='red')
+        meta.draw_graph(direct, 'Line', 'black', fill='red', line_width=5)
 
 root = Tk()
-self = Meta(root, line_width=5, width=250, height=400, background='white')
+self = Meta(root, width=250, height=400, background='white')
 
 points = [
     (20, 20), (30, 50), (100, 250),
@@ -87,18 +87,14 @@ root.mainloop()
 
 ![图2 画出多边形](../images/meta_polygon.png)
 
-您也可以使用 `self.create_polygon(points, fill='red')` 画出有内部填充的多边形。下面以“矩形”为例来说明这些图形元素的更多方法。
-
-### 2.1 画虚线
-
-可以使用如下代码画出虚线图形（需要指定参数 `dash`）：
+您也可以使用 `self.create_polygon(points, fill='red')` 画出有内部填充的多边形。可以使用如下代码画出虚线图形（需要指定参数 `dash`）：
 
 ```python
 def test_meta_dash(direction = (20, 20, 220, 300)):
     from tkinter import Tk
     root = Tk()
-    self = Meta(root, line_width=10, width=250, height=400, background='white')
-    self.draw_graph(direction, 'Rectangle', 'blue', dash=5)
+    self = Meta(root, width=250, height=400, background='white')
+    self.draw_graph(direction, 'Rectangle', 'blue', line_width=10, dash=5)
     self.layout()
     root.mainloop()
 
@@ -108,3 +104,127 @@ test_meta_dash()
 效果见图3：
 
 ![图3 Meta 画虚线的示例](../images/meta_dash.png)
+
+我们无需关注 `Canvas.create_line`、`Canvas.create_arc`、`Canvas.create_rectangle`、`Canvas.create_oval` 等的具体实现原理，直接从其实现的效果来看，这些方法基本实现了“点动成线，线动成面”的思想。
+
+## 3 张量
+
+由于 `Canvas` 没有提供直接画点的方法，所以需要我们自定义。在此之前，我们回顾一下数学中对“点”（或者说是向量、张量）在笛卡尔积中的定义即为多维数组：$x = (x_0, x_1, x_2, \cdots, x_{n-1})$。张量 $x$ 分量可以使用下标进行索引，比如 $x_3 = x[3]$。
+
+一般地，张量有模长和方向，模长可以记作 $||x||$（即范数），而方向可以使用方向角 $\theta = (\theta_0, \theta_1, \theta_2 \cdots, \theta_{n-1})$ 表示，其中 $\theta_j \in (-\pi, \pi)$。这样张量也可以表示为 $x =  \theta ||x||$。下面仅仅讨论二维张量。
+
+下面考虑 Canvas 的 `Line`（即有向线段），我们可以定义为从点 $a$（被称为起点）到点 $b$（被称为终点）之间的张量之差：$b-a$。前面已经讨论了如何画线段，现在我们使用 `line_width` 参数验证“线动成面”的效果。首先设计如下一个类：
+
+```python
+class Line:
+    def __init__(self, start_point, end_point, line_width=5):
+        self.start_point =  start_point
+        self.end_point =  end_point
+        self.line_width = line_width
+
+    def run(self):
+        from tkinter import Tk
+        root = Tk()
+        direction = (*self.start_point, *self.end_point)
+        meta = Meta(root, width=200, height=200, background='blue')
+        meta.draw_graph(direction, 'Line', 'white', line_width=1)
+        direction1 = list(direction)
+        direction1[0] += 20
+        direction1[2] += 20
+        meta.draw_graph(direction1, 'Line', 'red', line_width=self.line_width)
+        [meta.draw_graph((direction[0]+40+k, direction[1], direction[2]+40+k, direction[3]), 
+                         'Line', 'yellow', line_width=1) for k in range(self.line_width)]
+        y_stride = direction1[3] - direction1[1]
+        [meta.draw_graph((direction1[0]+k-2, direction1[1]+y_stride, direction1[2]+k-2, direction1[3]+y_stride),
+                         'Line', 'yellow', line_width=1) for k in range(self.line_width)]
+        meta.layout()
+        root.mainloop()
+```
+
+这个类很好理解，我们直接看其调用的效果。先看看竖直线的效果：
+
+```python
+start_point, end_point = (20, 20), (20, 100)
+line = Line(start_point, end_point, line_width=5)
+line.run()
+```
+
+显示如下图4：
+
+![图4 竖直线动生成的矩形](../images/v_line.png)
+
+从图4 可以看出水平堆叠 `line_width` 线宽为1 的白线得到的黄线与设定线宽为 `line_width` 的红线是等宽和等高的。换言之，参数 `line_width` 实现了“线动成面”的效果。如果我们改变终点（即改变线段的方向）：
+
+```python
+start_point, end_point = (20, 20), (100, 100)
+line = Line(start_point, end_point, line_width=5)
+line.run()
+```
+
+![图5 倾斜直线动生成的四边形](../images/p_line.png)
+
+为了让堆叠 `line_width` 线宽为1 的白线与设定线宽为 `line_width` 的红线相同，需要改变线段堆叠的方向为"ne"（即西北方向），这里就不放具体的代码了。
+
+## 4 位移
+
+在物理学中常常使用“位移”来描述物体相对位置的变动，故而引入“位移”的概念有助于我们理解和操纵 Canvas 的对象。使用代码实现：
+
+```python
+class Graph:
+    def __init__(self, meta):
+        self.meta = meta
+
+    def move(self, graph_id, displacement):
+        '''Move objects along displacement
+
+        :param graph_id: The identifier of graph.
+        :param displacement: The concept of representing the displacement in physics.
+        '''
+        self.meta.move(graph_id, *displacement)
+
+# 测试
+def test_Graph(direction, displacement, line_width=7):
+    from tkinter import Tk
+    root = Tk()
+    meta = Meta(root, width=200, height=200, background='blue')
+    graph = Graph(meta)
+    graph_id = graph.meta.draw_graph(direction, 'Line', 'white', line_width=line_width)
+    graph.move(graph_id, displacement)
+    graph.meta.draw_graph(direction, 'Line', 'red', line_width=line_width)
+    meta.layout()
+    root.mainloop()
+
+direction = (20, 20, 100, 100)
+displacement = (-10, 10)
+test_Graph(direction, displacement)
+```
+
+效果图见图6：
+
+![图6 按照位移移动 graph](../images/displacement.png)
+
+图6 中的红色图形对象沿着 (-1, 1) 方向移动到 10 个像素到白色图形对象位置。
+
+## 5 画点
+
+可以直接以 `Line` 的方式画点：
+
+```python
+from tkinter import Tk
+root = Tk()
+meta = Meta(root, width=200, height=200, background='blue')
+origin_x, origin_y = 0, 0
+start_points = [(origin_x+k, origin_y+k) for k in range(10, 200, 5)]
+end_points = [(origin_x+k+1, origin_y+k) for k in range(10, 200, 5)]
+graphs = [meta.draw_graph(direct, 'Line', 'white', line_width=2) for direct in zip(start_points, end_points)]
+meta.layout()
+root.mainloop()
+```
+
+效果图见图7：
+
+![图7 以 `Line` 的方式画点](../images/line_point.png)
+
+该例子形象地说明了线是由点构成的。但是这种画法有点繁琐，改变点的大小也很麻烦。为了更方便的画“点”，我们可以使用 Rectangle 和 Oval 来画点。
+
+## 5.1 方点
