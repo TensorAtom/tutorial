@@ -265,8 +265,8 @@ direction = (160, 100, 160, 100)
 meta = Meta(root, width=300, height=300, background='blue')
 meta.create_line((0, 0, 160, 100), arrow='last', width=2)
 meta.draw_graph(direction, 'Rectangle', 'white', line_width=2)
-meta.create_text((175, 115), 
-                 text='Tensor\ndisplacement is (160, 100)', 
+meta.create_text((175, 115),
+                 text='Tensor\ndisplacement is (160, 100)',
                  fill='yellow')
 meta.layout()
 root.mainloop()
@@ -276,4 +276,44 @@ root.mainloop()
 
 ![图10 像素可以看作是张量](../images/point.png)
 
-下面讨论如何使用 Rectangle 画线段
+## 5.2 圆点 ●
+
+使用 Oval 看看改变 `line_width` 的不同⚪：
+
+```python
+root = Tk()
+direction = (20, 20, 120, 120)
+direction1 = (120, 20, 220, 120)
+direction2 = (20, 120, 120, 220)
+meta = Meta(root, width=500, height=500, background='green')
+meta.draw_graph(direction, 'Oval', 'red', line_width=20, fill='black')
+meta.draw_graph(direction1, 'Oval', 'white', line_width=1, fill='yellow')
+meta.draw_graph(direction2, 'Oval', 'white', line_width=1, fill='yellow')
+meta.layout()
+root.mainloop()
+```
+
+效果见图11：
+
+![图11 椭圆的 line_width](../images/oval.png)
+
+可以看出 Oval 也是中心填充 `line_width` 的。
+
+同样，也可以使用 Oval 画出“点”：
+
+```python
+root = Tk()
+direction = (160, 100, 160, 100)
+meta = Meta(root, width=300, height=300, background='blue')
+meta.create_line((0, 0, 160, 100), arrow='last', width=1)
+meta.draw_graph(direction, 'Oval', 'white', line_width=2)
+meta.create_text((175, 115),
+                 text='Tensor\ndisplacement is (160, 100)',
+                 fill='yellow')
+meta.layout()
+root.mainloop()
+```
+
+效果见图12：
+
+![图12 椭圆的“点”](../images/oval_point.png)
