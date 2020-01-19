@@ -317,3 +317,129 @@ root.mainloop()
 效果见图12：
 
 ![图12 椭圆的“点”](../images/oval_point.png)
+
+## 6 绑定鼠标作画
+
+可以直接使用选择器器与鼠标进行图形的绘制：
+
+```python
+class Drawing(Meta):
+    '''创建图形元素（简称 graph），包括矩形框（可以是方形点），椭圆形（圆形点），线段
+
+    '''
+
+    def __init__(self, master=None, cnf={}, selector=None, **kw):
+        super().__init__(master, cnf, **kw)
+        self.master = master
+        self.selector = selector
+        self.master.title('计算机视觉')
+        self._init_params()
+        self.bind("<1>", self.update_xy)
+        self.bind("<ButtonRelease-1>", self.draw)
+
+    def _init_params(self):
+        self.current_id = None
+        self.x = self.y = 0  # 记录鼠标左键的坐标
+
+    def update_xy(self, event):
+        '''按压鼠标左键'''
+        self.x = event.x
+        self.y = event.y
+
+    def select_graph(self, event):
+        '''按压鼠标右键'''
+        self.configure(cursor="target")
+        self.update_xy(event)
+        # 获取当前鼠标指示的对象的 id
+        self.current_id = self.find_withtag('current')
+
+    def get_bbox(self, event):
+        x0, y0 = self.x, self.y  # 左上角坐标
+        x1, y1 = event.x, event.y  # 右下角坐标
+        bbox = x0, y0, x1, y1
+        return bbox
+
+    def draw(self, event):
+        '''释放鼠标左键'''
+        self.configure(cursor="arrow")
+        bbox = self.get_bbox(event)
+        self.create_graph(bbox)
+
+    @property
+    def graph_params(self):
+        return {
+            'line_width': 1,
+            'tags': self.selector._graph_type,
+            'fill': 'red' if 'Point' in self.selector._graph_type else None
+        }
+
+    def create_graph(self, bbox):
+        '''创建图形
+        参数
+        ========
+        bbox: x0,y0,x1,y1
+        '''
+        x0, y0, x1, y1 = bbox
+        cond1 = x0 == x1 and y0 == y1 and 'Point' not in self.selector._graph_type
+        cond2 = 'Point' in self.selector._graph_type and (x0 != x1 or y0 != y1)
+        if cond1 or cond2:
+            return
+        else:
+            self.draw_graph(bbox, graph_type=self.selector.graph_type,
+                            color=self.selector.color, **self.graph_params)
+
+    def layout(self, row=0, column=0):
+        '''布局'''
+        self.grid(row=row, column=column, sticky='nwes')
+
+
+if __name__ == '__main__':
+    from graph_tensor.graph.atom import Meta
+    from graph_tensor.graph.creator import Selector
+    root = Tk()
+    icon_meta = Meta(root, width=210, height=60)
+    selector = Selector(icon_meta)
+
+    meta = Graph(root, selector=selector, background='white')
+    # Makes the master widget change as the canvas size
+    root.columnconfigure(0, weight=1)
+    root.rowconfigure(0, weight=1)
+    meta.layout()
+    icon_meta.layout(0, 1)
+    root.mainloop()
+```
+
+效果图见图13：
+
+![图13 使用鼠标作画](../images/drawing.png)
+
+此程序模拟“画笔”作画进行设定的，当您在右侧的选择器选择了“graph”和“color”之后，便可以在做出画出相应的图形。作画的过程是：鼠标左键点击画布开始作画，当您释放鼠标左键之后作画完成。如果您想要模拟鼠标的运行轨迹进行作画，只需要将更改绑定的事件即可：
+
+```python
+class TrajectoryDrawing(Drawing):
+    '''创建图形元素（简称 graph），包括矩形框（可以是方形点），椭圆形（圆形点），线段
+
+    '''
+
+    def __init__(self, master=None, cnf={}, selector=None, **kw):
+        super().__init__(master, cnf, selector, **kw)
+        self.bind("<1>", self.update_xy)
+        self.bind("<ButtonRelease-1>", self.update_xy)
+        self.bind("<Button1-Motion>", self.draw)
+
+if __name__ == '__main__':
+    root = Tk()
+    icon_meta = Meta(root, width=210, height=60)
+    selector = Selector(icon_meta)
+    meta = TrajectoryDrawing(root, selector=selector, background='white')
+    # Makes the master widget change as the canvas size
+    root.columnconfigure(0, weight=1)
+    root.rowconfigure(0, weight=1)
+    meta.layout()
+    icon_meta.layout(0, 1)
+    root.mainloop()
+```
+
+效果图见图14：
+
+![图14 自定义“抽象画”](../images/trajectory_drawing.png)
